@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart'; // <--- ADDED THIS for Colors
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // <--- ADDED for kIsWeb
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -13,6 +14,9 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
+    // --- WEB SAFE CHECK ---
+    if (kIsWeb) return; 
+
     tz.initializeTimeZones();
 
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -33,7 +37,7 @@ class NotificationService {
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        print("Notification clicked: ${response.payload}");
+        debugPrint("Notification clicked: ${response.payload}");
       },
     );
 
@@ -41,16 +45,24 @@ class NotificationService {
   }
 
   Future<void> _requestPermissions() async {
+    // --- WEB SAFE CHECK ---
+    if (kIsWeb) return;
+
     if (await Permission.notification.isDenied) {
       await Permission.notification.request();
     }
-    if (await Permission.scheduleExactAlarm.isDenied) {
-      await Permission.scheduleExactAlarm.request();
+    // scheduleExactAlarm is Android-only, will crash on Web/iOS without check
+    if (defaultTargetPlatform == TargetPlatform.android) {
+       if (await Permission.scheduleExactAlarm.isDenied) {
+         await Permission.scheduleExactAlarm.request();
+       }
     }
   }
 
   // --- 1. DAILY MOOD REMINDER ---
   Future<void> scheduleDailyCheckIn(int hour, int minute) async {
+    if (kIsWeb) return;
+
     await flutterLocalNotificationsPlugin.zonedSchedule(
       0,
       'How are you feeling?',
@@ -73,25 +85,15 @@ class NotificationService {
   }
 
   // --- 2. TASK DEADLINE ALERT ---
-// --- REPLACE YOUR EXISTING scheduleTaskReminder WITH THIS ---
   Future<void> scheduleTaskReminder(int taskId, String taskTitle, DateTime dueDate) async {
-    // 1. Calculate the alert time (1 hour before due date)
+    if (kIsWeb) return;
+
     final scheduledTime = dueDate.subtract(const Duration(hours: 1));
     
-    // 2. DEBUG PRINTS (Look at your console when you save a task)
-    print("---------------- NOTIFICATION DEBUG ----------------");
-    print("Current System Time: ${DateTime.now()}");
-    print("User Selected Deadline: $dueDate");
-    print("Calculated Alert Time (-1 hr): $scheduledTime");
-
-    // 3. Check if time is in the past
     if (scheduledTime.isBefore(DateTime.now())) {
-      print("❌ SKIPPED: Calculated time is in the past.");
-      print("----------------------------------------------------");
       return;
     }
 
-    // 4. Schedule the notification
     await flutterLocalNotificationsPlugin.zonedSchedule(
       taskId,
       'Task Due Soon: $taskTitle',
@@ -110,20 +112,19 @@ class NotificationService {
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );
-    
-    print("✅ SUCCESS: Notification scheduled for $scheduledTime");
-    print("----------------------------------------------------");
   }
 
   // --- 3. INSTANT ALERT ---
   Future<void> showInstantNotification(String title, String body) async {
+    if (kIsWeb) return;
+
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'jitai_channel_id',
       'Smart Interventions',
       channelDescription: 'Real-time feedback and interventions',
       importance: Importance.max,
       priority: Priority.high,
-      color: Color(0xFF673AB7), // <--- FIXED: Wrapped in Color()
+      color: Color(0xFF673AB7), 
     );
 
     const NotificationDetails details = NotificationDetails(android: androidDetails);
@@ -137,6 +138,7 @@ class NotificationService {
   }
 
   tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
+    // This is a logic helper, but tz.local can crash if init() wasn't run
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduledDate =
         tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
@@ -147,6 +149,7 @@ class NotificationService {
   }
   
   Future<void> cancelAllNotifications() async {
+    if (kIsWeb) return;
     await flutterLocalNotificationsPlugin.cancelAll();
   }
 }

@@ -1,16 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // Required for kIsWeb
 import 'notification_service.dart';
-import 'login_screen.dart'; // Import the separated login screen
+import 'login_screen.dart'; 
 
 void main() async {
+  // Ensure Flutter is ready before calling any plugins
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Initialize Notifications
-  final notificationService = NotificationService();
-  await notificationService.init();
+  // --- WEB COMPATIBILITY FIX ---
+  // We only initialize notifications if the app is NOT running on a browser.
+  if (!kIsWeb) {
+    try {
+      final notificationService = NotificationService();
+      await notificationService.init();
 
-  // 2. Schedule Daily Check-in (e.g., at 8:00 PM)
-  await notificationService.scheduleDailyCheckIn(20, 0);
+      // Schedule Daily Check-in (e.g., at 8:00 PM)
+      await notificationService.scheduleDailyCheckIn(20, 0);
+    } catch (e) {
+      // Catch any unexpected errors during notification setup on mobile
+      debugPrint("Notification initialization failed: $e");
+    }
+  } else {
+    debugPrint("Running on Web: Skipping mobile notification setup.");
+  }
 
   runApp(const MindLinkApp());
 }
@@ -36,7 +48,11 @@ class MindLinkApp extends StatelessWidget {
           backgroundColor: Color(0xFF607D8B),
           elevation: 0,
           centerTitle: true,
-          titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w500, color: Colors.white),
+          titleTextStyle: TextStyle(
+              fontSize: 20, 
+              fontWeight: FontWeight.w500, 
+              color: Colors.white
+          ),
           iconTheme: IconThemeData(color: Colors.white),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
