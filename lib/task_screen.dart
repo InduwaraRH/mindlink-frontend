@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'notification_service.dart';
 import 'chat_screen.dart'; // REQUIRED: Import your ChatScreen
+import 'api_service.dart';
 
 class TaskScreen extends StatefulWidget {
   final int userId;
@@ -26,7 +27,7 @@ class _TaskScreenState extends State<TaskScreen> {
 
   // --- 1. API CALLS ---
   Future<void> fetchTasks() async {
-    final url = Uri.parse('http://10.0.2.2:8000/tasks/${widget.userId}');
+    final url = Uri.parse('${ApiService.baseUrl}/tasks/${widget.userId}');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -48,7 +49,7 @@ class _TaskScreenState extends State<TaskScreen> {
     try {
       if (id == null) {
         // --- CREATE NEW TASK ---
-        final url = Uri.parse('http://10.0.2.2:8000/tasks/?user_id=${widget.userId}');
+        final url = Uri.parse('${ApiService.baseUrl}/tasks/?user_id=${widget.userId}');
         final response = await http.post(
           url,
           headers: {"Content-Type": "application/json"},
@@ -66,7 +67,7 @@ class _TaskScreenState extends State<TaskScreen> {
         }
       } else {
         // --- UPDATE EXISTING TASK ---
-        final url = Uri.parse('http://10.0.2.2:8000/tasks/$id');
+        final url = Uri.parse('${ApiService.baseUrl}/tasks/$id');
         await http.put(
           url,
           headers: {"Content-Type": "application/json"},
@@ -89,7 +90,7 @@ class _TaskScreenState extends State<TaskScreen> {
     setState(() => tasks.removeWhere((t) => t['id'] == id));
 
     try {
-      final url = Uri.parse('http://10.0.2.2:8000/tasks/delete/$id'); 
+      final url = Uri.parse('${ApiService.baseUrl}/tasks/delete/$id'); 
       final response = await http.delete(url);
       
       if (response.statusCode != 200) {
@@ -107,7 +108,7 @@ class _TaskScreenState extends State<TaskScreen> {
 
   // --- UPDATED: TOGGLE TASK + PROACTIVE CHECK-IN ---
   Future<void> toggleTask(int id, bool currentStatus, String content) async {
-    final url = Uri.parse('http://10.0.2.2:8000/tasks/$id');
+    final url = Uri.parse('${ApiService.baseUrl}/tasks/$id');
     
     // Optimistic Update
     setState(() {
@@ -170,7 +171,7 @@ class _TaskScreenState extends State<TaskScreen> {
   // --- AI FEEDBACK LOGIC ---
 
   Future<void> sendFeedback(int outcome) async {
-    final url = Uri.parse('http://10.0.2.2:8000/jitai/feedback');
+    final url = Uri.parse('${ApiService.baseUrl}/jitai/feedback');
     try {
       await http.post(
         url,
@@ -186,7 +187,7 @@ class _TaskScreenState extends State<TaskScreen> {
   }
 
   Future<void> checkJitaiIntervention() async {
-    final url = Uri.parse('http://10.0.2.2:8000/jitai/${widget.userId}');
+    final url = Uri.parse('${ApiService.baseUrl}/jitai/${widget.userId}');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {

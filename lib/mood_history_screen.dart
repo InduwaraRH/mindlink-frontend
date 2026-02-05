@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'api_service.dart';
 
 class MoodHistoryScreen extends StatefulWidget {
   final int userId;
@@ -28,7 +29,7 @@ class _MoodHistoryScreenState extends State<MoodHistoryScreen> {
 
   // --- 1. FETCH DATA ---
   Future<void> fetchAllThoughts() async {
-    final url = Uri.parse('http://10.0.2.2:8000/thoughts/${widget.userId}');
+    final url = Uri.parse('${ApiService.baseUrl}/thoughts/${widget.userId}');
     try {
       final response = await http.get(url);
       
@@ -54,7 +55,7 @@ class _MoodHistoryScreenState extends State<MoodHistoryScreen> {
 
   // --- 2. DELETE DATA ---
   Future<void> deleteThought(int id) async {
-    final url = Uri.parse('http://10.0.2.2:8000/thoughts/$id');
+    final url = Uri.parse('${ApiService.baseUrl}/thoughts/$id');
     try {
       await http.delete(url);
       fetchAllThoughts(); // Refresh list after delete

@@ -36,7 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // --- 1. FETCH THOUGHTS ---
   Future<void> fetchThoughts() async {
-    final url = Uri.parse('http://10.0.2.2:8000/thoughts/${widget.userId}');
+    final url = Uri.parse('${ApiService.baseUrl}/thoughts/${widget.userId}');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -65,7 +65,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // --- 3. SEND FEEDBACK (REWARD SIGNAL) ---
   Future<void> sendFeedback(int outcome) async {
     try {
-      final url = Uri.parse('http://10.0.2.2:8000/jitai/feedback');
+      final url = Uri.parse('${ApiService.baseUrl}/jitai/feedback');
       await http.post(
         url,
         headers: {"Content-Type": "application/json"},
@@ -77,11 +77,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // --- 4. CREATE ENTRY ---
+// --- 4. CREATE ENTRY ---
   Future<void> createThought() async {
     if (thoughtController.text.isEmpty) return;
 
-    final url = Uri.parse('http://10.0.2.2:8000/thoughts/?user_id=${widget.userId}');
+    // We use the dynamic baseUrl here correctly!
+    final url = Uri.parse('${ApiService.baseUrl}/thoughts/?user_id=${widget.userId}');
     
     try {
       final response = await http.post(
@@ -101,15 +102,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         fetchThoughts(); 
         _fetchSmartIntervention(); 
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Wellbeing check-in saved!')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Wellbeing check-in saved!')),
+          );
+        }
       }
-    } catch (e) { print("Error creating: $e"); }
+    } catch (e) { 
+      debugPrint("Error creating log: $e"); 
+    }
   }
 
   Future<void> deleteThought(int thoughtId) async {
-    final url = Uri.parse('http://10.0.2.2:8000/thoughts/$thoughtId');
+    final url = Uri.parse('${ApiService.baseUrl}/thoughts/$thoughtId');
     try {
       final response = await http.delete(url);
       if (response.statusCode == 200) {

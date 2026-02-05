@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dashboard_screen.dart';
 import 'register_screen.dart'; // Import the new register screen
+import 'api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,7 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> loginUser() async {
     setState(() => isLoading = true);
     // ⚠️ Use 10.0.2.2 for Android Emulator, 127.0.0.1 for iOS Simulator/Web
-    final url = Uri.parse('http://10.0.2.2:8000/login/'); 
+    final url = Uri.parse('${ApiService.baseUrl}/login/'); 
     
     try {
       final response = await http.post(

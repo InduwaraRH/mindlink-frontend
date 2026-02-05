@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'api_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,7 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> registerUser() async {
     setState(() => isLoading = true);
-    final url = Uri.parse('http://10.0.2.2:8000/users/');
+    final url = Uri.parse('${ApiService.baseUrl}/users/');
 
     try {
       final response = await http.post(

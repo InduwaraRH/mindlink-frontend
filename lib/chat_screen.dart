@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async'; // Required for Timer/Future delays
+import 'api_service.dart';
 
 // --- IMPORTS FOR NAVIGATION ---
 import 'crisis_screen.dart'; // Ensure this file exists in your project
@@ -42,7 +43,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // Call Python Backend
     // Use 10.0.2.2 for Android Emulator, localhost for iOS Simulator
-    final url = Uri.parse('http://10.0.2.2:8000/chat/');
+    final url = Uri.parse('${ApiService.baseUrl}/chat/');
     
     try {
       final response = await http.post(
