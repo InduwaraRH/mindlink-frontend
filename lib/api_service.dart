@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class ApiService {
   // Android Emulator -> your PC localhost
-  static const String baseUrl = "http://10.0.2.2:8000";
+  static const String baseUrl = "https://mindlink-backend-r6de.onrender.com";
 
   static Future<Map<String, dynamic>> getJitaiIntervention(int userId) async {
     final url = Uri.parse('$baseUrl/jitai/$userId');
