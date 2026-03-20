@@ -40,7 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     fetchThoughts();
-    fetchTasks(); // ✅ FR-08
+    fetchTasks();
     _fetchSmartIntervention();
   }
 
@@ -66,8 +66,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // ✅ FR-08: Fetches the full task list to power the ProductivityChart.
-  // Uses the existing /tasks/{user_id} endpoint — no backend changes needed.
   Future<void> fetchTasks() async {
     final url = Uri.parse('${ApiService.baseUrl}/tasks/${widget.userId}');
     try {
@@ -91,15 +89,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _contextVector = result['context_vector'] ?? [];
       isLoadingJitai = false;
 
-      // During cooldown, backend returns type=NONE but also returns
-      // 'state' with the actual predicted class. Use that for the indicator
-      // so it shows the real state even when no banner is shown.
       if (jitaiType == "NONE" && result['state'] != null) {
         jitaiType = result['state'];
       }
     });
 
-    // ✅ RC2 / FR-06: Fire a push notification for non-neutral JITAI states.
     if (result['event_id'] != null &&
         jitaiType != "NONE" &&
         jitaiType != "NEUTRAL") {
@@ -109,7 +103,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _refreshAll() async {
     await fetchThoughts();
-    await fetchTasks(); // ✅ FR-08
+    await fetchTasks();
     await _fetchSmartIntervention();
   }
 
@@ -179,7 +173,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return "🤩";
   }
 
-  // ✅ NFR-03: Plain-English explanation of ML prediction
   String _buildExplanation(String state, List<dynamic> vector) {
     if (vector.isEmpty) return "";
 
@@ -221,6 +214,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return "Why: ${reasons.join(' + ')}";
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // RC2: Maps internal state labels to user-friendly display labels.
+  // "JITAI" and raw state names are academic terms not meaningful to users.
+  // ─────────────────────────────────────────────────────────────────────────
+  String _getBannerTitle(String type) {
+    switch (type) {
+      case 'CRISIS':
+        return '⚠️ Wellbeing Support';
+      case 'ACADEMIC':
+        return '📚 Focus Reminder';
+      case 'MOTIVATION':
+        return '🎉 You\'re on a roll!';
+      default:
+        return '💡 MindLink Tip';
+    }
+  }
+
   Widget _buildStateIndicator() {
     if (isLoadingJitai) return const SizedBox.shrink();
 
@@ -228,23 +238,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
       "CRISIS": {
         "color": const Color(0xFFB71C1C),
         "bg": const Color(0xFFFFEBEE),
-        "icon": Icons.warning_amber_rounded,
-        "label": "Crisis State",
+        "icon": Icons.favorite_outline,
+        "label": "Wellbeing Support",
         "desc": "Low mood detected. Take it easy.",
       },
       "ACADEMIC": {
         "color": const Color(0xFF37474F),
         "bg": const Color(0xFFECEFF1),
-        "icon": Icons.school_outlined,
-        "label": "Academic Mode",
+        "icon": Icons.lightbulb_outline,
+        "label": "Focus Reminder",
         "desc": "High task load. Stay focused.",
       },
       "MOTIVATION": {
         "color": const Color(0xFF1B5E20),
         "bg": const Color(0xFFE8F5E9),
-        "icon": Icons.bolt,
-        "label": "Motivated",
-        "desc": "Great momentum. Keep going!",
+        "icon": Icons.celebration_outlined,
+        "label": "Great Progress!",
+        "desc": "Strong momentum. Keep going!",
       },
       "NONE": {
         "color": const Color(0xFF546E7A),
@@ -450,22 +460,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Color cardColor;
     Color borderColor;
     IconData cardIcon;
-    String titleText;
     VoidCallback onTapAction;
 
     switch (jitaiType) {
       case "CRISIS":
         cardColor = Colors.red.shade50;
         borderColor = Colors.red.shade200;
-        cardIcon = Icons.warning_amber_rounded;
-        titleText = "⚠️ Crisis Support";
+        cardIcon = Icons.favorite_outline;
         onTapAction = () {};
         break;
       case "ACADEMIC":
         cardColor = const Color(0xFFECEFF1);
         borderColor = const Color(0xFF90A4AE);
-        cardIcon = Icons.assignment_late_outlined;
-        titleText = "📚 Academic Focus";
+        cardIcon = Icons.lightbulb_outline;
         onTapAction = () {
           Navigator.push(
             context,
@@ -477,8 +484,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case "MOTIVATION":
         cardColor = Colors.green.shade50;
         borderColor = Colors.green.shade200;
-        cardIcon = Icons.bolt;
-        titleText = "🎉 You're on a roll!";
+        cardIcon = Icons.celebration_outlined;
         onTapAction = () {};
         break;
       default:
@@ -506,7 +512,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  titleText,
+                  // ✅ FIX: Use friendly banner title instead of raw type
+                  _getBannerTitle(jitaiType),
                   style: const TextStyle(
                       fontSize: 16, fontWeight: FontWeight.bold),
                 ),
@@ -727,12 +734,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
 
-              // Mood trend chart (existing)
               MoodChart(thoughts: thoughts),
-
-              // ✅ FR-08: Productivity trend chart — task completion rate
-              // over the last 7 days. Satisfies FR-08: "data visualisations
-              // showing productivity trends and wellbeing insights."
               ProductivityChart(tasks: tasks),
 
               Padding(

@@ -105,41 +105,47 @@ class _TaskScreenState extends State<TaskScreen> {
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data['proactive_feedback'] != null && mounted) {
-          final String msg = data['proactive_feedback'];
-          // ✅ FIX: clearSnackBars() removes the entire snackbar queue,
-          // not just the currently visible one. When tasks are completed
-          // rapidly, hideCurrentSnackBar() left queued snackbars stuck
-          // on screen indefinitely. clearSnackBars() prevents that backlog.
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: const Color(0xFF546E7A),
-              content: Row(
-                children: [
-                  const Icon(Icons.chat_bubble_outline, color: Colors.white),
-                  const SizedBox(width: 10),
-                  Expanded(
-                      child: Text(msg,
-                          maxLines: 2, overflow: TextOverflow.ellipsis)),
-                ],
-              ),
-              duration: const Duration(seconds: 5),
-              action: SnackBarAction(
-                label: "REPLY",
-                textColor: Colors.amber,
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) =>
-                              ChatScreen(userId: widget.userId)));
-                },
-              ),
-            ),
-          );
-        }
+if (data['proactive_feedback'] != null && mounted) {
+  final String msg = data['proactive_feedback'];
+  // Only show if still on task screen — not if user navigated away
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF546E7A),
+        // Add bottom margin so it doesn't overlap FAB or input fields
+        margin: const EdgeInsets.only(
+          bottom: 80,
+          left: 16,
+          right: 16,
+        ),
+        content: Row(
+          children: [
+            const Icon(Icons.chat_bubble_outline, color: Colors.white),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(msg,
+                  maxLines: 2, overflow: TextOverflow.ellipsis)),
+          ],
+        ),
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: "REPLY",
+          textColor: Colors.amber,
+          onPressed: () {
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) =>
+                        ChatScreen(userId: widget.userId)));
+          },
+        ),
+      ),
+    );
+  });
+}
       }
     } catch (e) {
       debugPrint("Error updating task: $e");
@@ -174,6 +180,23 @@ class _TaskScreenState extends State<TaskScreen> {
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // RC2: Maps internal state labels to user-friendly display labels.
+  // "JITAI" and "ACADEMIC MODE" are academic terms not meaningful to users.
+  // ─────────────────────────────────────────────────────────────────────────
+  String _getFriendlyLabel(String type) {
+    switch (type) {
+      case 'CRISIS':
+        return 'Wellbeing Check-in';
+      case 'ACADEMIC':
+        return 'Focus Reminder';
+      case 'MOTIVATION':
+        return 'Great Progress!';
+      default:
+        return 'MindLink Tip';
+    }
+  }
+
   Future<void> checkJitaiIntervention() async {
     final url = Uri.parse('${ApiService.baseUrl}/jitai/${widget.userId}');
     try {
@@ -194,15 +217,15 @@ class _TaskScreenState extends State<TaskScreen> {
         switch (type) {
           case 'CRISIS':
             bannerColor = Colors.red.shade700;
-            bannerIcon = Icons.warning_amber_rounded;
+            bannerIcon = Icons.favorite_outline;
             break;
           case 'ACADEMIC':
             bannerColor = const Color(0xFF546E7A);
-            bannerIcon = Icons.assignment_late_outlined;
+            bannerIcon = Icons.lightbulb_outline;
             break;
           case 'MOTIVATION':
             bannerColor = Colors.teal.shade700;
-            bannerIcon = Icons.sentiment_very_satisfied;
+            bannerIcon = Icons.celebration_outlined;
             break;
           default:
             bannerColor = const Color(0xFF37474F);
@@ -225,7 +248,8 @@ class _TaskScreenState extends State<TaskScreen> {
                     Icon(bannerIcon, color: Colors.white, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      "$type MODE",
+                      // ✅ FIX: Use friendly label instead of "$type MODE"
+                      _getFriendlyLabel(type),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
